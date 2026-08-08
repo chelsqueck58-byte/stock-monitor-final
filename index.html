@@ -653,21 +653,33 @@ function pastCatalystRows(category, lookbackDays = 30) {
   for (const inst of insts) {
     const eventDates = new Set();
 
-    // Add researched moves with outcomes (from MOVES)
+    // Add moves (researched and unresearched) from MOVES
     const m = MOVES && MOVES[inst.id];
     if (m) {
-      const researched = (m.moves || []).filter(mv => mv.reason);
-      for (const mv of researched) {
+      const allMoves = (m.moves || []);
+      for (const mv of allMoves) {
         const d = new Date(mv.d);
         if (d >= cutoff && d < today) {
           eventDates.add(mv.d);
-          const label = mv.catalyst_type === "earnings" ? "<b>📊 EARNINGS</b>" : "Move";
-          rows.push({
-            id: inst.id,
-            label: inst.label,
-            date: mv.d,
-            event: `<div style="font-weight:600;color:var(--up)">${label}</div>` + prevPerfBlock({ date: mv.d, pct: mv.pct, reason: mv.reason, source: mv.source }, "Move")
-          });
+          if (mv.reason) {
+            // Researched move with reason
+            const label = mv.catalyst_type === "earnings" ? "<b>📊 EARNINGS</b>" : "Move";
+            rows.push({
+              id: inst.id,
+              label: inst.label,
+              date: mv.d,
+              event: `<div style="font-weight:600;color:var(--up)">${label}</div>` + prevPerfBlock({ date: mv.d, pct: mv.pct, reason: mv.reason, source: mv.source }, "Move")
+            });
+          } else {
+            // Unresearched move - show just the move with price change
+            const cls = mv.pct >= 0 ? "u" : "d";
+            rows.push({
+              id: inst.id,
+              label: inst.label,
+              date: mv.d,
+              event: `<span class="pct ${cls}">${mv.pct >= 0 ? "+" : ""}${mv.pct}%</span> move <span style="color:var(--muted)">(researching...)</span>`
+            });
+          }
         }
       }
     }
